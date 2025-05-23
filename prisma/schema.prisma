@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String
+  email         String     @unique
+  password      String
+  image         String?
+  role          Role       @default(USER)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  products      Product[]  @relation("UserProducts")
+  purchases     Purchase[] @relation("UserPurchases")
+  sales         Purchase[] @relation("UserSales")
+  balance       Float      @default(0)
+}
+
+model Product {
+  id          String     @id @default(cuid())
+  name        String
+  description String
+  price       Float
+  condition   String   @default("NEW")
+  images      String[]
+  status      Status     @default(AVAILABLE)
+  views       Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  sellerId    String
+  seller      User       @relation("UserProducts", fields: [sellerId], references: [id])
+  purchases   Purchase[]
+
+  @@index([sellerId])
+}
+
+model Purchase {
+  id          String   @id @default(cuid())
+  status      Status   @default(PENDING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  buyerId     String
+  buyer       User     @relation("UserPurchases", fields: [buyerId], references: [id])
+  sellerId    String
+  seller      User     @relation("UserSales", fields: [sellerId], references: [id])
+}
+
+model AdminLog {
+  id        String   @id @default(cuid())
+  action    String
+  details   String
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Status {
+  AVAILABLE
+  PENDING
+  SOLD
+  SHIPPED
+  DELIVERED
+}
+
+enum Condition {
+  NEW
+  USED
+} 
